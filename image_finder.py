@@ -7,7 +7,8 @@ import json
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+env_path = Path(__file__).parent / '.env'
+load_dotenv(env_path)
 
 logger = logging.getLogger(__name__)
 
