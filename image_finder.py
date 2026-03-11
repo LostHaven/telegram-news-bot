@@ -153,3 +153,41 @@ class ImageFinder:
             logger.warning(f"Download error: {e}")
         
         return None
+    
+    def download_external_image(self, url: str) -> str | None:
+        if not url:
+            return None
+        
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                'Referer': 'https://lenta.ru/',
+            }
+            response = requests.get(url, headers=headers, timeout=20, allow_redirects=True)
+            
+            if response.status_code == 200 and len(response.content) > 10000:
+                content_type = response.headers.get('Content-Type', '').lower()
+                
+                ext = '.jpg'
+                if 'png' in content_type:
+                    ext = '.png'
+                elif 'webp' in content_type:
+                    ext = '.webp'
+                elif 'gif' in content_type:
+                    ext = '.gif'
+                
+                filename = f"article_{random.randint(100000, 999999)}{ext}"
+                filepath = self.cache_dir / filename
+                
+                with open(filepath, 'wb') as f:
+                    f.write(response.content)
+                
+                logger.info(f"Downloaded article image from: {url[:50]}...")
+                return str(filepath)
+            else:
+                logger.warning(f"Image download failed: status={response.status_code}, size={len(response.content)}")
+        except Exception as e:
+            logger.warning(f"Failed to download external image: {e}")
+        
+        return None

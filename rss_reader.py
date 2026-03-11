@@ -83,6 +83,35 @@ class RSSReader:
         
         return video_url
     
+    def _extract_image_from_article(self, html: str) -> str:
+        from bs4 import BeautifulSoup
+        import re
+        
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        og_image = soup.find('meta', property='og:image')
+        if og_image and og_image.get('content'):
+            return og_image['content']
+        
+        twitter_image = soup.find('meta', attrs={'name': 'twitter:image'})
+        if twitter_image and twitter_image.get('content'):
+            return twitter_image['content']
+        
+        article_img = soup.find('article') or soup.find('main')
+        if article_img:
+            img = article_img.find('img', src=True)
+            if img and img.get('src'):
+                return img['src']
+        
+        img_tags = soup.find_all('img', src=True)
+        for img in img_tags:
+            src = img.get('src', '')
+            if 'logo' not in src.lower() and 'icon' not in src.lower() and 'avatar' not in src.lower():
+                if src.startswith('http'):
+                    return src
+        
+        return ''
+    
     def _fetch_article_content(self, url: str) -> tuple:
         try:
             headers = {
@@ -179,13 +208,14 @@ class RSSReader:
                 article_text = article_text.strip()
                 
                 video_url = self._extract_video(html)
+                article_image = self._extract_image_from_article(html)
                 
-                return article_text[:900], video_url
+                return article_text[:900], video_url, article_image
                 
         except Exception as e:
             logger.warning(f"Failed to fetch article: {e}")
         
-        return '', ''
+        return '', '', ''
     
     def get_random_news_item(self) -> dict:
         news = self.get_latest_news(limit=20)
@@ -201,11 +231,20 @@ class RSSReader:
             self.last_headlines.add(item['title'])
             
             if not item.get('content') or len(item.get('content', '')) < 100:
-                full_content, video_url = self._fetch_article_content(item.get('link', ''))
+                full_content, video_url, article_image = self._fetch_article_content(item.get('link', ''))
                 if full_content:
                     item['content'] = full_content
                 if video_url:
                     item['video_url'] = video_url
+            
+            if not item.get('article_image'):
+                try:
+                    headers = {'User-Agent': 'Mozilla/5.0'}
+                    response = requests.get(item.get('link', ''), headers=headers, timeout=10)
+                    if response.status_code == 200:
+                        item['article_image'] = self._extract_image_from_article(response.text)
+                except:
+                    pass
             
             if len(self.last_headlines) > 50:
                 self.last_headlines.clear()

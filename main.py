@@ -49,13 +49,21 @@ class NewsPublisher:
             summary = news_item.get('summary', '')
             content = news_item.get('content', '')
             video_url = news_item.get('video_url', '')
+            article_image = news_item.get('article_image', '')
             
             logger.info(f"Headline: {headline}")
             
             post_text = self.news_generator.generate_news_post(headline, summary, content)
             logger.info(f"Post text: {post_text[:100]}...")
             
-            image_path = self.image_finder.find_image(headline)
+            image_path = None
+            if article_image:
+                image_path = self.image_finder.download_external_image(article_image)
+                logger.info(f"Article image: {image_path}")
+            
+            if not image_path:
+                image_path = self.image_finder.find_image(headline)
+                logger.info(f"Unsplash image: {image_path}")
             
             if self.telegram_poster:
                 success = await self.telegram_poster.send_post(post_text, image_path, video_url)
