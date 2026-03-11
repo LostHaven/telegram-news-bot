@@ -48,6 +48,7 @@ class NewsPublisher:
             headline = news_item['title']
             summary = news_item.get('summary', '')
             content = news_item.get('content', '')
+            video_url = news_item.get('video_url', '')
             
             logger.info(f"Headline: {headline}")
             
@@ -57,10 +58,7 @@ class NewsPublisher:
             image_path = self.image_finder.find_image(headline)
             
             if self.telegram_poster:
-                if image_path:
-                    success = await self.telegram_poster.send_post(post_text, image_path)
-                else:
-                    success = await self.telegram_poster.send_text_only(post_text)
+                success = await self.telegram_poster.send_post(post_text, image_path, video_url)
                 if success:
                     logger.info("Post published!")
                 else:

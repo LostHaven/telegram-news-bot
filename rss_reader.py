@@ -49,7 +49,41 @@ class RSSReader:
         summary = summary.strip()
         return summary[:max_len]
     
-    def _fetch_article_content(self, url: str) -> str:
+    def _extract_video(self, html: str) -> str:
+        import re
+        video_url = ''
+        
+        patterns = [
+            r'<video[^>]+src=["\']([^"\']+)["\']',
+            r'<iframe[^>]+src=["\'](https?://[^"\']*youtube[^"\']*)["\']',
+            r'<iframe[^>]+src=["\'](https?://[^"\']*vkvideo[^"\']*)["\']',
+            r'<iframe[^>]+src=["\'](https?://[^"\']*vk\.com[^"\']*)["\']',
+            r'data-video-src=["\']([^"\']+)["\']',
+            r'videoUrl["\']:\s*["\']([^"\']+)["\']',
+            r'"video_url"\s*:\s*"([^"]+)"',
+            r'<source[^>]+src=["\']([^"\']+\.mp4[^"\']*)["\']',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, html, re.IGNORECASE)
+            if match:
+                video_url = match.group(1)
+                break
+        
+        if not video_url:
+            yt_match = re.search(r'(youtube\.com/embed/|youtu\.be/)([a-zA-Z0-9_-]+)', html, re.IGNORECASE)
+            if yt_match:
+                video_id = yt_match.group(2)
+                video_url = f'https://www.youtube.com/watch?v={video_id}'
+        
+        if not video_url:
+            vk_match = re.search(r'vkvideo\.ru/video(\d+_\d+)', html, re.IGNORECASE)
+            if vk_match:
+                video_url = f'https://vk.com/video{vk_match.group(1)}'
+        
+        return video_url
+    
+    def _fetch_article_content(self, url: str) -> tuple:
         try:
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -144,12 +178,14 @@ class RSSReader:
                 article_text = re.sub(r'\s+', ' ', article_text)
                 article_text = article_text.strip()
                 
-                return article_text[:1500]
+                video_url = self._extract_video(html)
+                
+                return article_text[:1500], video_url
                 
         except Exception as e:
             logger.warning(f"Failed to fetch article: {e}")
         
-        return ''
+        return '', ''
     
     def get_random_news_item(self) -> dict:
         news = self.get_latest_news(limit=20)
@@ -165,9 +201,11 @@ class RSSReader:
             self.last_headlines.add(item['title'])
             
             if not item.get('content') or len(item.get('content', '')) < 100:
-                full_content = self._fetch_article_content(item.get('link', ''))
+                full_content, video_url = self._fetch_article_content(item.get('link', ''))
                 if full_content:
                     item['content'] = full_content
+                if video_url:
+                    item['video_url'] = video_url
             
             if len(self.last_headlines) > 50:
                 self.last_headlines.clear()
