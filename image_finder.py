@@ -3,7 +3,7 @@ import requests
 import logging
 import random
 import json
-import hashlib
+import re
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -16,48 +16,39 @@ class ImageFinder:
         self.used_file = Path(__file__).parent / 'used_images.json'
         self.used_images = self._load_used_images()
         
-        self.image_pool = [
-            "1504711434969-e33886168f5c",
-            "1495020689067-958852a7765e",
-            "1585829365295-ab7cd400c167",
-            "1451187580459-43490279c0fa",
-            "1526304640581-d334cdbbf45e",
-            "1551288049-bebda4e38f71",
-            "1460925895917-afdab827c52f",
-            "1486406146926-c627a92ad1ab",
-            "1486312338219-ce68d2c6f44d",
-            "1518770660439-4636190af475",
-            "1550751827-4bd374c3f58b",
-            "1485829404709-0ff882266299",
-            "1519389950473-47ba0277781c",
-            "1461749280684-dccba630e2f6",
-            "1516321318423-f06f85e504b3",
-            "1504639725590-34d0984388bd",
-            "1526374965328-7f61d4dc18c5",
-            "1531297484001-80022131f5a1",
-            "1488590528505-98d2b5aba04b",
-            "1517649763962-0c623066013b",
-            "1579952363873-27f3bade9f55",
-            "1461896836934-0fd9f8b2f0b8",
-            "1546519638-68e109498ffc",
-            "1531415074968-b0372014fef8",
-            "1508098682722-e99c43a406b2",
-            "1574629810360-7efbbe195018",
-            "1507003211169-0a1dd7228f2d",
-            "1454165804606-c3d57bc86b40",
-            "1556761175-5973dc0f32e7",
-            "1553028826-f4804a6dba3b",
-            "1497366216548-37526070297c",
-            "1497215842964-222b430dc094",
-            "1521737711867-e3b97375f902",
-            "1560518883-ce09059eeffa",
-            "1494526585095-c41746248156",
-            "1512917774080-9991f1c4c750",
-            "1502672260266-1c1ef2d93688",
-            "1560448204-e02f11c3d0e2",
-            "1570129477492-45c003edd2be",
-            "1580587771525-78b9dba3b914",
-        ]
+        self.unsplash_photos = []
+        self._load_photo_list()
+    
+    def _load_photo_list(self):
+        try:
+            url = "https://api.unsplash.com/photos/random?count=30&orientation=landscape"
+            headers = {
+                'User-Agent': 'Mozilla/5.0',
+                'Accept-Version': 'v1'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=15)
+            
+            if response.status_code == 200:
+                photos = response.json()
+                self.unsplash_photos = [p.get('urls', {}).get('regular') for p in photos if p.get('urls', {}).get('regular')]
+                logger.info(f"Loaded {len(self.unsplash_photos)} photos from Unsplash")
+        except Exception as e:
+            logger.warning(f"Unsplash API error: {e}")
+        
+        if not self.unsplash_photos:
+            self.unsplash_photos = [
+                "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800",
+                "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800",
+                "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800",
+                "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800",
+                "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800",
+                "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800",
+                "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
+                "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800",
+                "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800",
+                "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800",
+            ]
     
     def _load_used_images(self) -> set:
         try:
@@ -76,38 +67,112 @@ class ImageFinder:
             pass
     
     def find_image(self, headline: str = None, keywords: list = None) -> str | None:
-        return self._get_unique_image(headline)
+        if headline:
+            keywords = self._extract_keywords(headline)
+            
+            result = self._search_by_keywords(keywords)
+            if result:
+                return result
+        
+        return self._get_random_unique_image()
     
-    def _get_unique_image(self, headline: str = None) -> str | None:
-        available = [p for p in self.image_pool if p not in self.used_images]
+    def _extract_keywords(self, text: str) -> list:
+        stop_words = {'и', 'в', 'на', 'по', 'для', 'с', 'о', 'что', 'как', 'это', 'из', 'к', 'за', 'от', 'до', 'при', 'или', 'но', 'не', 'то', 'же', 'у', 'быть', 'был', 'была', 'это', 'который', 'а', 'которых', 'москва', 'россия', 'российск', 'украин', 'сша', 'европ', 'мир', 'новость', 'говорит', 'стал', 'стала', 'будет', 'может'}
+        
+        words = re.findall(r'[а-яёa-z0-9]+', text.lower())
+        keywords = [w for w in words if len(w) > 3 and w not in stop_words]
+        
+        return keywords[:4]
+    
+    def _search_by_keywords(self, keywords: list) -> str | None:
+        search_terms = {
+            ('политика', 'военн', 'армия', 'вооружённ'): 'politics military war',
+            ('экономика', 'финанс', 'бизнес', 'инвестиц', 'рынок', 'деньг'): 'business finance economy',
+            ('технологии', 'it', 'компьютер', 'интернет', 'гаджет'): 'technology computer',
+            ('спорт', 'футбол', 'хоккей'): 'sports football',
+            ('наука', 'исследова', 'учёны'): 'science research',
+            ('недвижим', 'квартир', 'дом', 'строительств'): 'real estate house',
+            ('авто', 'машин', 'транспорт'): 'car vehicle',
+            ('здоровье', 'медицин', 'больниц'): 'health medical',
+            ('культура', 'искусств', 'фильм', 'музык'): 'art culture',
+            ('природа', 'эколог', 'климат'): 'nature environment',
+        }
+        
+        keyword_str = ' '.join(keywords)
+        
+        for keys, search_term in search_terms.items():
+            if any(k in keyword_str for k in keys):
+                return self._get_image_for_term(search_term)
+        
+        return None
+    
+    def _get_image_for_term(self, search_term: str) -> str | None:
+        try:
+            url = f"https://api.unsplash.com/photos/random?query={search_term}&orientation=landscape&count=5"
+            headers = {'Accept-Version': 'v1'}
+            
+            response = requests.get(url, headers=headers, timeout=15)
+            
+            if response.status_code == 200:
+                photos = response.json()
+                
+                if isinstance(photos, list):
+                    for photo in photos:
+                        img_url = photo.get('urls', {}).get('regular')
+                        if img_url and img_url not in self.used_images:
+                            return self._download_image(img_url)
+        except Exception as e:
+            logger.warning(f"Search error: {e}")
+        
+        return None
+    
+    def _get_random_unique_image(self) -> str | None:
+        available = [p for p in self.unsplash_photos if p not in self.used_images]
         
         if not available:
             self.used_images.clear()
             self._save_used_images()
-            available = self.image_pool[:]
+            available = self.unsplash_photos[:]
         
         random.shuffle(available)
         
-        for photo_id in available[:10]:
-            url = f"https://images.unsplash.com/photo-{photo_id}?w=800&q=80"
-            
+        for url in available[:5]:
             try:
-                response = requests.get(url, timeout=10)
+                response = requests.get(url, timeout=15)
                 
                 if response.status_code == 200 and len(response.content) > 5000:
-                    self.used_images.add(photo_id)
+                    self.used_images.add(url)
                     self._save_used_images()
                     
-                    filename = f"news_{photo_id}.jpg"
+                    filename = f"news_{random.randint(100000, 999999)}.jpg"
                     filepath = self.cache_dir / filename
                     
                     with open(filepath, 'wb') as f:
                         f.write(response.content)
                     
-                    logger.info(f"Downloaded: {photo_id}")
                     return str(filepath)
-                    
-            except Exception as e:
+            except:
                 continue
+        
+        return None
+    
+    def _download_image(self, url: str) -> str | None:
+        try:
+            response = requests.get(url, timeout=20)
+            
+            if response.status_code == 200 and len(response.content) > 5000:
+                self.used_images.add(url)
+                self._save_used_images()
+                
+                filename = f"news_{random.randint(100000, 999999)}.jpg"
+                filepath = self.cache_dir / filename
+                
+                with open(filepath, 'wb') as f:
+                    f.write(response.content)
+                
+                logger.info(f"Downloaded image for keywords")
+                return str(filepath)
+        except Exception as e:
+            logger.warning(f"Download error: {e}")
         
         return None
