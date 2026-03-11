@@ -3,6 +3,7 @@ import requests
 import logging
 import random
 import re
+import json
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -10,22 +11,46 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+USED_IMAGES_FILE = Path(__file__).parent / 'used_images.json'
+
 class ImageFinder:
     def __init__(self):
         self.cache_dir = Path(__file__).parent / 'image_cache'
         self.cache_dir.mkdir(exist_ok=True)
         
         self.unsplash_api_key = os.getenv('UNSPLASH_ACCESS_KEY', '')
+        self.used_photo_ids = self._load_used_photos()
+    
+    def _load_used_photos(self) -> set:
+        try:
+            if USED_IMAGES_FILE.exists():
+                with open(USED_IMAGES_FILE, 'r', encoding='utf-8') as f:
+                    return set(json.load(f))
+        except:
+            pass
+        return set()
+    
+    def _save_used_photos(self):
+        try:
+            with open(USED_IMAGES_FILE, 'w', encoding='utf-8') as f:
+                json.dump(list(self.used_photo_ids), f)
+        except:
+            pass
+    
+    def _mark_photo_used(self, photo_id: str):
+        self.used_photo_ids.add(photo_id)
+        if len(self.used_photo_ids) > 200:
+            self.used_photo_ids = set(list(self.used_photo_ids)[-100:])
+        self._save_used_photos()
     
     def find_image(self, headline: str = None, keywords: list = None) -> str | None:
         if headline:
             keywords = self._extract_keywords(headline)
-            
             result = self._search_unsplash(keywords)
             if result:
                 return result
         
-        return self._get_default_image()
+        return None
     
     def _extract_keywords(self, text: str) -> list:
         stop_words = {'и', 'в', 'на', 'по', 'для', 'с', 'о', 'что', 'как', 'это', 'из', 'к', 'за', 'от', 'до', 'при', 'или', 'но', 'не', 'то', 'же', 'у', 'быть', 'был', 'была', 'это', 'который', 'а', 'которых', 'москва', 'россия', 'российск', 'украин', 'сша', 'европ', 'мир', 'новость', 'говорит', 'стал', 'стала', 'будет', 'может', 'пишет', 'сообщ', 'ранее', 'такж'}
@@ -41,18 +66,18 @@ class ImageFinder:
             return None
         
         search_terms = {
-            ('политика', 'военн', 'армия', 'вооружённ', 'сво', 'днр', 'лнр', 'военн'): 'politics military war conflict',
+            ('политика', 'военн', 'армия', 'вооружённ', 'сво', 'днр', 'лнр'): 'politics military war conflict',
             ('экономика', 'финанс', 'бизнес', 'инвестиц', 'рынок', 'деньг', 'банк', 'рубл', 'доллар'): 'business finance economy stock',
-            ('технологии', 'it', 'компьютер', 'интернет', 'гаджет', 'смартфон', 'ai', 'искусственн', 'технолог'): 'technology computer innovation',
-            ('спорт', 'футбол', 'хоккей', 'матч', 'чемпион', 'спорт'): 'sports football game',
-            ('наука', 'исследова', 'учёны', 'открыти', 'научн'): 'science research laboratory',
-            ('недвижим', 'квартир', 'дом', 'строительств', 'жиль', 'недвижим'): 'real estate house building',
-            ('авто', 'машин', 'транспорт', 'дорог', 'автомобил'): 'car vehicle traffic',
-            ('здоровье', 'медицин', 'больниц', 'врач', 'здоров'): 'health medical hospital',
-            ('культура', 'искусств', 'фильм', 'музык', 'театр', 'культур'): 'art culture theater',
-            ('природа', 'эколог', 'климат', 'погод', 'природ'): 'nature landscape environment',
-            ('митинг', 'протест', 'акци', 'митинг'): 'protest crowd demonstration',
-            ('президент', 'правительств', 'губернатор', 'депутат', 'парламент'): 'government politics building',
+            ('технологии', 'it', 'компьютер', 'интернет', 'гаджет', 'смартфон', 'ai', 'искусственн'): 'technology computer innovation',
+            ('спорт', 'футбол', 'хоккей', 'матч', 'чемпион'): 'sports football game stadium',
+            ('наука', 'исследова', 'учёны', 'открыти'): 'science research laboratory',
+            ('недвижим', 'квартир', 'дом', 'строительств', 'жиль'): 'real estate house building architecture',
+            ('авто', 'машин', 'транспорт', 'дорог'): 'car vehicle traffic highway',
+            ('здоровье', 'медицин', 'больниц', 'врач'): 'health medical hospital doctor',
+            ('культура', 'искусств', 'фильм', 'музык', 'театр'): 'art culture theater concert',
+            ('природа', 'эколог', 'климат', 'погод'): 'nature landscape mountains sky',
+            ('митинг', 'протест', 'акци'): 'protest crowd demonstration',
+            ('президент', 'правительств', 'губернатор', 'депутат'): 'government politics building',
         }
         
         keyword_str = ' '.join(keywords)
@@ -79,12 +104,18 @@ class ImageFinder:
                 data = response.json()
                 results = data.get('results', [])
                 
-                random.shuffle(results)
+                available_photos = [p for p in results if p.get('id') not in self.used_photo_ids]
                 
-                for photo in results:
+                if not available_photos:
+                    available_photos = results
+                
+                random.shuffle(available_photos)
+                
+                for photo in available_photos:
+                    photo_id = photo.get('id')
                     img_url = photo.get('urls', {}).get('regular')
-                    if img_url:
-                        filepath = self._download_image(img_url, query)
+                    if img_url and photo_id:
+                        filepath = self._download_image(img_url, photo_id)
                         if filepath:
                             return filepath
                         
@@ -93,7 +124,7 @@ class ImageFinder:
         
         return None
     
-    def _download_image(self, url: str, query: str = "") -> str | None:
+    def _download_image(self, url: str, photo_id: str = None) -> str | None:
         try:
             response = requests.get(url, timeout=20)
             
@@ -104,30 +135,12 @@ class ImageFinder:
                 with open(filepath, 'wb') as f:
                     f.write(response.content)
                 
-                logger.info(f"Downloaded image for: {query}")
+                if photo_id:
+                    self._mark_photo_used(photo_id)
+                
+                logger.info(f"Downloaded image from Unsplash (photo_id: {photo_id})")
                 return str(filepath)
         except Exception as e:
             logger.warning(f"Download error: {e}")
-        
-        return None
-    
-    def _get_default_image(self) -> str | None:
-        default_urls = [
-            "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800",
-            "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800",
-            "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800",
-            "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800",
-            "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800",
-        ]
-        
-        random.shuffle(default_urls)
-        
-        for url in default_urls:
-            try:
-                filepath = self._download_image(url, "default")
-                if filepath:
-                    return filepath
-            except:
-                continue
         
         return None

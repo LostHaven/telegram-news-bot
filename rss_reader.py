@@ -12,8 +12,6 @@ class RSSReader:
         self.last_headlines = set()
     
     def get_latest_news(self, limit: int = 5) -> list:
-        """Получает последние новости из RSS лент"""
-        
         all_news = []
         
         for feed_url in self.feeds:
@@ -23,20 +21,27 @@ class RSSReader:
                 for entry in feed.entries[:limit]:
                     all_news.append({
                         'title': entry.get('title', ''),
-                        'summary': entry.get('summary', '')[:200],
+                        'summary': self._clean_summary(entry.get('summary', '')),
                         'link': entry.get('link', ''),
                         'published': entry.get('published', '')
                     })
                     
             except Exception as e:
-                logger.error(f"Ошибка чтения RSS {feed_url}: {e}")
+                logger.error(f"RSS error {feed_url}: {e}")
         
         random.shuffle(all_news)
         return all_news[:limit]
     
-    def get_random_headline(self) -> str:
-        """Возвращает случайный заголовок новости"""
-        
+    def _clean_summary(self, summary: str) -> str:
+        import re
+        summary = re.sub('<[^>]+>', '', summary)
+        summary = summary.replace('&nbsp;', ' ')
+        summary = summary.replace('&amp;', '&')
+        summary = summary.replace('&quot;', '"')
+        summary = summary.strip()
+        return summary[:500]
+    
+    def get_random_news_item(self) -> dict:
         news = self.get_latest_news(limit=20)
         
         available = [n for n in news if n['title'] not in self.last_headlines]
@@ -46,28 +51,15 @@ class RSSReader:
             available = news
         
         if available:
-            headline = random.choice(available)['title']
-            self.last_headlines.add(headline)
+            item = random.choice(available)
+            self.last_headlines.add(item['title'])
             
             if len(self.last_headlines) > 50:
                 self.last_headlines.clear()
             
-            return headline
+            return item
         
-        return self._get_fallback_headline()
+        return {'title': 'Новостей нет', 'summary': ''}
     
-    def _get_fallback_headline(self) -> str:
-        """Fallback заголовки, если RSS недоступны"""
-        
-        headlines = [
-            "Технологический сектор продолжает расти",
-            "Новые исследования в области искусственного интеллекта",
-            "Экономические прогнозы на следующий квартал",
-            "Международные отношения в центре внимания",
-            "Инновации в сфере зеленой энергетики",
-            "Мировые рынки: последние тенденции",
-            "Научные открытия недели",
-            "Спортивные события: обзор дня"
-        ]
-        
-        return random.choice(headlines)
+    def get_random_headline(self) -> str:
+        return self.get_random_news_item()['title']

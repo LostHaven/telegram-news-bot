@@ -43,16 +43,23 @@ class NewsPublisher:
         logger.info(f"Publishing: {datetime.now()}")
         
         try:
-            headline = self.rss_reader.get_random_headline()
+            news_item = self.rss_reader.get_random_news_item()
+            
+            headline = news_item['title']
+            summary = news_item.get('summary', '')
+            
             logger.info(f"Headline: {headline}")
             
-            post_text = self.news_generator.generate_news_post(headline)
+            post_text = self.news_generator.generate_news_post(headline, summary)
             logger.info(f"Post text: {post_text[:100]}...")
             
             image_path = self.image_finder.find_image(headline)
             
             if self.telegram_poster:
-                success = await self.telegram_poster.send_post(post_text, image_path)
+                if image_path:
+                    success = await self.telegram_poster.send_post(post_text, image_path)
+                else:
+                    success = await self.telegram_poster.send_text_only(post_text)
                 if success:
                     logger.info("Post published!")
                 else:
@@ -62,6 +69,9 @@ class NewsPublisher:
                 
         except Exception as e:
             logger.error(f"Error: {e}")
+    
+    async def test_publish(self):
+        await self.publish_news()
     
     async def run_scheduler(self):
         self.scheduler = AsyncIOScheduler(timezone=pytz.timezone('Europe/Moscow'))
