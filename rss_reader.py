@@ -57,18 +57,95 @@ class RSSReader:
             response = requests.get(url, headers=headers, timeout=10)
             
             if response.status_code == 200:
-                text = response.text
+                html = response.text
+                
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(html, 'html.parser')
+                
+                for tag in soup(['script', 'style', 'nav', 'header', 'footer', 'aside', 'iframe', 'form']):
+                    tag.decompose()
+                
+                content_selectors = [
+                    'article',
+                    '[itemprop="articleBody"]',
+                    '.article-body',
+                    '.article__body',
+                    '.content-body',
+                    '.post-content',
+                    '.entry-content',
+                    '.news-text',
+                    '.text-body',
+                    'main',
+                    '.main-content'
+                ]
+                
+                article_text = ''
+                for selector in content_selectors:
+                    elem = soup.select_one(selector)
+                    if elem:
+                        article_text = elem.get_text(separator=' ', strip=True)
+                        break
+                
+                if not article_text:
+                    body = soup.find('body')
+                    if body:
+                        article_text = body.get_text(separator=' ', strip=True)
+                
+                noise_patterns = [
+                    r'\d{1,2}:\d{2},?\s*\d{1,2}\s+\w+\s+\d{4}',
+                    r'\d{1,2}:\d{2}\s+\w+',
+                    r'Telegram\s*[-–—]?\s*\w+',
+                    r'Подробнее\s*на\s*',
+                    r'Читайте также:[^.]*',
+                    r'Авто:[^.]*',
+                    r'Главное[^.]*',
+                    r'Россия[^.]*Мир[^.]*',
+                    r'Бывший СССР[^.]*',
+                    r'Экономика[^.]*',
+                    r'Силовые структуры[^.]*',
+                    r'Наука и техника[^.]*',
+                    r'Культура[^.]*',
+                    r'Спорт[^.]*',
+                    r'Интернет и СМИ[^.]*',
+                    r'Ценности[^.]*',
+                    r'Путешествия[^.]*',
+                    r'Из жизни[^.]*',
+                    r'Среда обитания[^.]*',
+                    r'Забота о себе[^.]*',
+                    r'Войти[^.]*',
+                    r'Эксклюзивы[^.]*',
+                    r'Статьи[^.]*',
+                    r'Галереи[^.]*',
+                    r'Видео[^.]*',
+                    r'Спецпроекты[^.]*',
+                    r'Исследования[^.]*',
+                    r'Архив[^.]*',
+                    r'Лента добра[^.]*',
+                    r'Вернуться[^.]*',
+                    r'Реклама[^.]*',
+                    r'Подписаться[^.]*',
+                    r'Читайте также[^.]*',
+                    r'Теперь вы знаете[^.]*',
+                    r'Хочешь видеть[^.]*',
+                    r'VK Видео[^.]*',
+                    r'Соглашение[^.]*',
+                    r'\d+\+\$',
+                    r'© \d{4}',
+                    r'Все права защищены[^.]*',
+                    r'Источник:[^.]*',
+                    r'Фото:[^.]*',
+                    r'Автор:[^.]*',
+                ]
                 
                 import re
-                text = re.sub(r'<script[^>]*>.*?</script>', '', text, flags=re.DOTALL)
-                text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL)
+                for pattern in noise_patterns:
+                    article_text = re.sub(pattern, '', article_text, flags=re.IGNORECASE)
                 
-                text = re.sub(r'<[^>]+>', ' ', text)
-                text = re.sub(r'\s+', ' ', text)
+                article_text = re.sub(r'\s+', ' ', article_text)
+                article_text = article_text.strip()
                 
-                text = self._clean_summary(text)
+                return article_text[:1500]
                 
-                return text[:1500]
         except Exception as e:
             logger.warning(f"Failed to fetch article: {e}")
         
