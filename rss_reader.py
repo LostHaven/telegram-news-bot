@@ -29,7 +29,7 @@ class RSSReader:
                     all_news.append({
                         'title': entry.get('title', ''),
                         'summary': self._clean_summary(entry.get('summary', '')),
-                        'content': self._clean_summary(content, 1500),
+                        'content': self._clean_summary(content, 900),
                         'link': entry.get('link', ''),
                         'published': entry.get('published', '')
                     })
@@ -180,7 +180,7 @@ class RSSReader:
                 
                 video_url = self._extract_video(html)
                 
-                return article_text[:1500], video_url
+                return article_text[:900], video_url
                 
         except Exception as e:
             logger.warning(f"Failed to fetch article: {e}")

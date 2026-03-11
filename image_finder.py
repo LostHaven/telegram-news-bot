@@ -5,6 +5,7 @@ import random
 import re
 import json
 from pathlib import Path
+from urllib.parse import quote
 from dotenv import load_dotenv
 
 env_path = Path(__file__).parent / '.env'
@@ -67,7 +68,7 @@ class ImageFinder:
             return None
         
         search_terms = {
-            ('политика', 'военн', 'армия', 'вооружённ', 'сво', 'днр', 'лнр'): 'politics military war conflict',
+            ('политика', 'военн', 'армия', 'вооружённ', 'сво', 'днр', 'лнр', 'израиль', 'ливан', 'иран'): 'politics military war conflict middle east',
             ('экономика', 'финанс', 'бизнес', 'инвестиц', 'рынок', 'деньг', 'банк', 'рубл', 'доллар'): 'business finance economy stock',
             ('технологии', 'it', 'компьютер', 'интернет', 'гаджет', 'смартфон', 'ai', 'искусственн'): 'technology computer innovation',
             ('спорт', 'футбол', 'хоккей', 'матч', 'чемпион'): 'sports football game stadium',
@@ -89,11 +90,18 @@ class ImageFinder:
                 if result:
                     return result
         
-        return self._fetch_from_unsplash(' '.join(keywords))
+        fallback_terms = ' '.join(keywords)
+        if fallback_terms:
+            result = self._fetch_from_unsplash(fallback_terms)
+            if result:
+                return result
+        
+        return self._fetch_from_unsplash('news breaking')
     
     def _fetch_from_unsplash(self, query: str) -> str | None:
         try:
-            url = f"https://api.unsplash.com/search/photos?query={query}&orientation=landscape&per_page=30"
+            encoded_query = quote(query)
+            url = f"https://api.unsplash.com/search/photos?query={encoded_query}&orientation=landscape&per_page=30"
             headers = {
                 'Authorization': f'Client-ID {self.unsplash_api_key}',
                 'Accept-Version': 'v1'

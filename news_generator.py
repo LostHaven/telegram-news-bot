@@ -48,7 +48,7 @@ class NewsGenerator:
             if len(sentences) > 3:
                 text = '. '.join(sentences[:3]) + '.'
         
-        return text[:1500]
+        return text[:900]
     
     def _generate_with_ollama(self, headline: str, topic: str) -> str:
         """Генерирует пост через Ollama"""
