@@ -19,9 +19,16 @@ class RSSReader:
                 feed = feedparser.parse(feed_url)
                 
                 for entry in feed.entries[:limit]:
+                    content = ''
+                    if hasattr(entry, 'content') and entry.content:
+                        content = entry.content[0].value if hasattr(entry.content[0], 'value') else str(entry.content[0])
+                    elif hasattr(entry, 'description'):
+                        content = entry.description
+                    
                     all_news.append({
                         'title': entry.get('title', ''),
                         'summary': self._clean_summary(entry.get('summary', '')),
+                        'content': self._clean_summary(content),
                         'link': entry.get('link', ''),
                         'published': entry.get('published', '')
                     })

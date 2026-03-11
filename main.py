@@ -47,10 +47,11 @@ class NewsPublisher:
             
             headline = news_item['title']
             summary = news_item.get('summary', '')
+            content = news_item.get('content', '')
             
             logger.info(f"Headline: {headline}")
             
-            post_text = self.news_generator.generate_news_post(headline, summary)
+            post_text = self.news_generator.generate_news_post(headline, summary, content)
             logger.info(f"Post text: {post_text[:100]}...")
             
             image_path = self.image_finder.find_image(headline)

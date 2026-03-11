@@ -10,11 +10,18 @@ class NewsGenerator:
         self.model = Config.OLLAMA_MODEL
         self.use_ollama = Config.USE_OLLAMA
     
-    def generate_news_post(self, headline: str, summary: str = "") -> str:
+    def generate_news_post(self, headline: str, summary: str = "", content: str = "") -> str:
         """Создаёт пост на основе реального заголовка и summary из RSS"""
         
+        text = content if content and len(content) > len(summary) else summary
+        
+        if text:
+            cleaned = self._clean_summary(text, use_full=True)
+            if cleaned:
+                return f"{headline}\n\n{cleaned}"
+        
         if summary:
-            cleaned_summary = self._clean_summary(summary)
+            cleaned_summary = self._clean_summary(summary, use_full=False)
             if cleaned_summary:
                 return f"{headline}\n\n{cleaned_summary}"
         
@@ -26,7 +33,7 @@ class NewsGenerator:
         
         return headline
     
-    def _clean_summary(self, text: str) -> str:
+    def _clean_summary(self, text: str, use_full: bool = False) -> str:
         import re
         text = re.sub('<[^>]+>', '', text)
         text = text.replace('&nbsp;', ' ')
@@ -36,11 +43,12 @@ class NewsGenerator:
         text = text.replace('&gt;', '>')
         text = text.strip()
         
-        sentences = text.split('. ')
-        if len(sentences) > 3:
-            text = '. '.join(sentences[:3]) + '.'
+        if not use_full:
+            sentences = text.split('. ')
+            if len(sentences) > 3:
+                text = '. '.join(sentences[:3]) + '.'
         
-        return text[:400]
+        return text[:800]
     
     def _generate_with_ollama(self, headline: str, topic: str) -> str:
         """Генерирует пост через Ollama"""
