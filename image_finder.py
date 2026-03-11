@@ -27,6 +27,11 @@ class ImageFinder:
                 "https://images.unsplash.com/photo-1531508787417-6e871b72ecee?w=800",
                 "https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?w=800",
                 "https://images.unsplash.com/photo-1557821552-17105176677c?w=800",
+                "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800",
+                "https://images.unsplash.com/photo-1529101091760-61df51603896?w=800",
+                "https://images.unsplash.com/photo-1541872703-74c5963631df?w=800",
+                "https://images.unsplash.com/photo-1555848962-6e79363ec58f?w=800",
+                "https://images.unsplash.com/photo-1569240651611-302a63427549?w=800",
             ],
             'экономика': [
                 "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800",
@@ -39,6 +44,8 @@ class ImageFinder:
                 "https://images.unsplash.com/photo-1590362891991-f776e747a588?w=800",
                 "https://images.unsplash.com/photo-1559526323-cb2f2fe2591b?w=800",
                 "https://images.unsplash.com/photo-1518013431117-eb1465fa5752?w=800",
+                "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800",
+                "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800",
             ],
             'технологии': [
                 "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800",
@@ -51,6 +58,8 @@ class ImageFinder:
                 "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800",
                 "https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=800",
                 "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800",
+                "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800",
+                "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=800",
             ],
             'спорт': [
                 "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800",
@@ -74,7 +83,6 @@ class ImageFinder:
                 "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=800",
                 "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=800",
                 "https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?w=800",
-                "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800",
             ],
             'бизнес': [
                 "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800",
@@ -97,16 +105,6 @@ class ImageFinder:
                 "https://images.unsplash.com/photo-1531508787417-6e871b72ecee?w=800",
                 "https://images.unsplash.com/photo-1557821552-17105176677c?w=800",
                 "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800",
-                "https://images.unsplash.com/photo-1599361933322-6b7695b8c838?w=800",
-                "https://images.unsplash.com/photo-1541872703-74c5963631df?w=800",
-            ],
-            'росси': [
-                "https://images.unsplash.com/photo-1541872703-74c5963631df?w=800",
-                "https://images.unsplash.com/photo-1555848962-6e79363ec58f?w=800",
-                "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=800",
-                "https://images.unsplash.com/photo-1569240651611-302a63427549?w=800",
-                "https://images.unsplash.com/photo-1579606032821-4e6161c81571?w=800",
-                "https://images.unsplash.com/photo-1540910419868-474947cebacb?w=800",
             ],
             'недвижим': [
                 "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800",
@@ -127,8 +125,6 @@ class ImageFinder:
                 "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=800",
                 "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800",
                 "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
-                "https://images.unsplash.com/photo-1590362891991-f776e747a588?w=800",
-                "https://images.unsplash.com/photo-1559526323-cb2f2fe2591b?w=800",
             ],
             'украин': [
                 "https://images.unsplash.com/photo-1541872703-74c5963631df?w=800",
@@ -137,10 +133,6 @@ class ImageFinder:
                 "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800",
                 "https://images.unsplash.com/photo-1569240651611-302a63427549?w=800",
                 "https://images.unsplash.com/photo-1579606032821-4e6161c81571?w=800",
-                "https://images.unsplash.com/photo-1531508787417-6e871b72ecee?w=800",
-                "https://images.unsplash.com/photo-1557821552-17105176677c?w=800",
-                "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=800",
-                "https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?w=800",
             ],
             'default': [
                 "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800",
@@ -153,6 +145,11 @@ class ImageFinder:
                 "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800",
                 "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800",
                 "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800",
+                "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800",
+                "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800",
+                "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800",
+                "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800",
+                "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800",
             ]
         }
     
@@ -194,21 +191,22 @@ class ImageFinder:
             self._save_used_images()
             available_urls = urls
         
-        for _ in range(10):
+        urls_to_try = available_urls[:]
+        random.shuffle(urls_to_try)
+        
+        for url in urls_to_try:
             try:
-                url = random.choice(available_urls)
                 response = requests.get(url, timeout=15)
                 
                 if response.status_code == 200:
                     self.used_images.add(url)
                     self._save_used_images()
-                    filename = f"news_{theme}_{random.randint(1000,9999)}.jpg"
+                    filename = f"news_{theme}_{random.randint(10000,99999)}.jpg"
                     filepath = self.cache_dir / filename
                     
                     if not filepath.exists():
                         with open(filepath, 'wb') as f:
                             f.write(response.content)
-                        logger.info(f"Downloaded: {filepath} (theme: {theme})")
                     
                     return str(filepath)
                     
